@@ -1,8 +1,8 @@
-ARG DOCKER_REGISTRY=quay.io
-ARG DOCKER_REGISTRY_USERNAME=bgruening
-ARG IMAGE_TAG=latest
+ARG DOCKER_REGISTRY
+ARG DOCKER_REGISTRY_REPO
+ARG IMAGE_TAG
 
-FROM $DOCKER_REGISTRY/$DOCKER_REGISTRY_USERNAME/galaxy-container-base:$IMAGE_TAG
+FROM $DOCKER_REGISTRY/$DOCKER_REGISTRY_REPO/galaxy-container-base:$IMAGE_TAG
 
 # Base dependencies
 RUN apt update && apt install --no-install-recommends gnupg2 -y \
@@ -36,7 +36,7 @@ RUN apt update \
     && dpkg -i cvmfs-release-latest_all.deb \
     && rm -f cvmfs-release-latest_all.deb \
     && apt update \
-    && apt install --no-install-recommends cvmfs -y \
+    && apt install --allow-unauthenticated --no-install-recommends cvmfs -y \
     && mkdir /srv/cvmfs \
     && /usr/bin/common_cleanup.sh
 COPY files/cvmfs /etc/cvmfs

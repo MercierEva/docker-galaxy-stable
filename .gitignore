@@ -54,6 +54,6 @@ docs/_build/
 
 # Export folder for docker-compose setup
 compose/export
-compose-v2/export
+#compose-v2/export
 
 .DS_Store

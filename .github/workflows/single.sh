@@ -38,10 +38,10 @@ container_size_check () {
 
 export WORKING_DIR=${GITHUB_WORKSPACE:-$PWD}
 
-export DOCKER_RUN_CONTAINER="quay.io/bgruening/galaxy"
+export DOCKER_RUN_CONTAINER="ghcr.io/merciereva/galaxy"
 SAMPLE_TOOLS=$GALAXY_HOME/ephemeris/sample_tool_list.yaml
 cd "$WORKING_DIR"
-docker build -t quay.io/bgruening/galaxy galaxy/
+docker build -t ghcr.io/merciereva/galaxy galaxy/
 #container_size_check   quay.io/bgruening/galaxy  1500
 
 mkdir local_folder
@@ -54,7 +54,7 @@ docker run -d -p 8080:80 -p 8021:21 -p 8022:22 \
     -e GALAXY_CONFIG_ENABLE_USER_DELETION=True \
     -e GALAXY_CONFIG_ENABLE_BETA_WORKFLOW_MODULES=True \
     -v /tmp/:/tmp/ \
-    quay.io/bgruening/galaxy
+    ghcr.io/merciereva/galaxy
 
 sleep 30
 docker logs galaxy
@@ -65,7 +65,7 @@ docker_exec() {
 }
 docker_exec_run() {
    cd "$WORKING_DIR"
-   docker run quay.io/bgruening/galaxy "$@"
+   docker run ghcr.io/merciereva/galaxy "$@"
 }
 docker_run() {
    cd "$WORKING_DIR"

@@ -1,13 +1,13 @@
 version: "3.7"
 services:
   galaxy-server:
-    image: ${DOCKER_REGISTRY:-quay.io}/${DOCKER_REGISTRY_USERNAME:-bgruening}/galaxy-server:${IMAGE_TAG:-latest}
+    image: ${DOCKER_REGISTRY:-ghcr.io}/${DOCKER_REGISTRY_REPO:-merciereva/docker-galaxy-stable}/galaxy-server:${IMAGE_TAG:-test-release-23.0}
     build: galaxy-server
-    environment:
-      - GALAXY_DEFAULT_ADMIN_USER=admin
-      - GALAXY_DEFAULT_ADMIN_EMAIL=admin@galaxy.org
-      - GALAXY_DEFAULT_ADMIN_PASSWORD=password
-      - GALAXY_DEFAULT_ADMIN_KEY=fakekey
+    # environment:
+    #   - GALAXY_DEFAULT_ADMIN_USER=admin
+    #   - GALAXY_DEFAULT_ADMIN_EMAIL=admin@galaxy.org
+    #   - GALAXY_DEFAULT_ADMIN_PASSWORD=password
+    #   - GALAXY_DEFAULT_ADMIN_KEY=fakekey
     hostname: galaxy-server
     privileged: True
     ports:
@@ -25,7 +25,7 @@ services:
   # The galaxy-configurator is responsible for the whole configuration of
   # your setup and should be the central place of configuration.
   galaxy-configurator:
-    image: ${DOCKER_REGISTRY:-quay.io}/${DOCKER_REGISTRY_USERNAME:-bgruening}/galaxy-configurator:${IMAGE_TAG:-latest}
+    image: ${DOCKER_REGISTRY:-ghcr.io}/${DOCKER_REGISTRY_REPO:-merciereva/docker-galaxy-stable}/galaxy-configurator:${IMAGE_TAG:-test-release-23.0}
     build: galaxy-configurator
     environment:
       - EXPORT_DIR=${EXPORT_DIR:-./export}
@@ -62,7 +62,7 @@ services:
   # offload static file serving
   # (https://docs.galaxyproject.org/en/master/admin/production.html#using-a-proxy-server)
   nginx:
-    image: ${DOCKER_REGISTRY:-quay.io}/${DOCKER_REGISTRY_USERNAME:-bgruening}/galaxy-nginx:${IMAGE_TAG:-latest}
+    image: ${DOCKER_REGISTRY:-ghcr.io}/${DOCKER_REGISTRY_REPO:-merciereva/docker-galaxy-stable}/galaxy-nginx:${IMAGE_TAG:-test-release-23.0}
     build: galaxy-nginx
     ports:
       - 80:80

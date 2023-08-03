@@ -9,7 +9,7 @@ done;
 for workflow in $(echo $WORKFLOWS | sed "s/,/ /g")
 do
   echo "Running test $workflow"
-  planemo $PLANEMO_OPTIONS test \
+  planemo test \
     --galaxy_url "${GALAXY_URL:-nginx}" \
     --galaxy_admin_key "${GALAXY_USER_KEY:-fakekey}" \
     --shed_install \

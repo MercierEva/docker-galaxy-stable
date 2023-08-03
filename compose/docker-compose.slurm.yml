@@ -15,7 +15,7 @@ services:
       - ${EXPORT_DIR:-./export}/munge:/etc/munge
       - ${EXPORT_DIR:-./export}/slurm_config:/etc/slurm-llnl
   slurmctld:
-    image: ${DOCKER_REGISTRY:-quay.io}/${DOCKER_REGISTRY_USERNAME:-bgruening}/galaxy-slurm:${IMAGE_TAG:-latest}
+    image: $DOCKER_REGISTRY/$DOCKER_REGISTRY_REPO/galaxy-slurm:$IMAGE_TAG
     build: galaxy-slurm
     command: ["slurmctld"]
     hostname: slurmctld
@@ -25,13 +25,13 @@ services:
     networks:
       - galaxy
   slurm_node_discovery:
-    image: ${DOCKER_REGISTRY:-quay.io}/${DOCKER_REGISTRY_USERNAME:-bgruening}/galaxy-slurm-node-discovery:${IMAGE_TAG:-latest}
+    image: $DOCKER_REGISTRY/$DOCKER_REGISTRY_REPO/galaxy-slurm-node-discovery:$IMAGE_TAG
     build: galaxy-slurm-node-discovery
     volumes:
       - ${EXPORT_DIR:-./export}/slurm_config:/etc/slurm-llnl
       - /var/run/docker.sock:/var/run/docker.sock
   slurm_node:
-    image: ${DOCKER_REGISTRY:-quay.io}/${DOCKER_REGISTRY_USERNAME:-bgruening}/galaxy-slurm:${IMAGE_TAG:-latest}
+    image: $DOCKER_REGISTRY/$DOCKER_REGISTRY_REPO/galaxy-slurm:$IMAGE_TAG
     build: galaxy-slurm
     command: ["slurmd"]
     privileged: true

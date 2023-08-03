@@ -1,6 +1,6 @@
-ARG DOCKER_REGISTRY=quay.io
-ARG DOCKER_REGISTRY_USERNAME=bgruening
-ARG IMAGE_TAG=latest
+ARG DOCKER_REGISTRY
+ARG DOCKER_REGISTRY_REPO
+ARG IMAGE_TAG
 
 FROM buildpack-deps:20.04 as galaxy_dependencies
 
@@ -21,7 +21,7 @@ RUN mkdir "${GALAXY_ROOT}" \
     && ls . | grep -v "__init__.py\|datatypes\|exceptions\|files\|metadata\|model\|util\|security" | xargs rm -rf
 
 
-FROM $DOCKER_REGISTRY/$DOCKER_REGISTRY_USERNAME/galaxy-container-base:$IMAGE_TAG as final
+FROM $DOCKER_REGISTRY/$DOCKER_REGISTRY_REPO/galaxy-container-base:$IMAGE_TAG as final
 
 ENV DEBIAN_FRONTEND noninteractive
 

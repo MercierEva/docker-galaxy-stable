@@ -1,80 +1,94 @@
 name: build-and-test
 on: [push]
+env:
+  REGISTRY: ghcr.io
 jobs:
   build_container_base:
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
+    env:
+      image_name: galaxy-container-base
+    permissions:
+      contents: read
+      packages: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Set image tag
-        id: image_tag
+      - name: downcase REPO
         run: |
-          if [ "${GITHUB_REF#refs/heads/}" = "master" ]; then
-            echo "::set-output name=image_tag::latest";
-          else
-            echo "::set-output name=image_tag::${GITHUB_REF#refs/heads/}"
-          fi
+          echo "REPO_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
       - name: Docker Login
         run: echo "${{ secrets.docker_registry_password }}" | docker login -u ${{ secrets.docker_registry_username }} --password-stdin ${{ secrets.docker_registry }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN}}
       - name: Set up Docker Buildx
         id: buildx
-        uses: crazy-max/ghaction-docker-buildx@v1
+        uses: docker/setup-buildx-action@v2
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
-          buildx-version: v0.3.1
-      - name: Run Buildx
-        env:
-          image_name: galaxy-container-base
-        run: |
-          for i in {1..4}; do
-            set +e
-            docker buildx build  \
-            --output "type=image,name=${{ secrets.docker_registry }}/${{ secrets.docker_registry_username }}/$image_name:${{ steps.image_tag.outputs.image_tag }},push=true" \
-            --build-arg IMAGE_TAG=${{ steps.image_tag.outputs.image_tag }} \
-            --build-arg DOCKER_REGISTRY=${{ secrets.docker_registry }} \
-            --build-arg DOCKER_REGISTRY_USERNAME=${{ secrets.docker_registry_username }} \
-            $image_name && break || echo "Fail.. Retrying"
-          done;
-        shell: bash
-        working-directory: ./compose/base-images
+          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.image_name }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: ./compose/base-images/${{ env.image_name }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
   build_cluster_base:
     needs: build_container_base
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    env:
+      image_name: galaxy-cluster-base
+    permissions:
+      contents: read
+      packages: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Set image tag
-        id: image_tag
+      - name: downcase REPO
         run: |
-          if [ "${GITHUB_REF#refs/heads/}" = "master" ]; then
-            echo "::set-output name=image_tag::latest";
-          else
-            echo "::set-output name=image_tag::${GITHUB_REF#refs/heads/}"
-          fi
-      - name: Docker Login
-        run: echo "${{ secrets.docker_registry_password }}" | docker login -u ${{ secrets.docker_registry_username }} --password-stdin ${{ secrets.docker_registry }}
+          echo "REPO_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2     
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Docker Buildx
         id: buildx
-        uses: crazy-max/ghaction-docker-buildx@v1
+        uses: docker/setup-buildx-action@v2
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
-          buildx-version: v0.3.1
-      - name: Run Buildx
-        env:
-          image_name: galaxy-cluster-base
-        run: |
-          for i in {1..4}; do
-            set +e
-            docker buildx build  \
-            --output "type=image,name=${{ secrets.docker_registry }}/${{ secrets.docker_registry_username }}/$image_name:${{ steps.image_tag.outputs.image_tag }},push=true" \
-            --build-arg IMAGE_TAG=${{ steps.image_tag.outputs.image_tag }} \
-            --build-arg DOCKER_REGISTRY=${{ secrets.docker_registry }} \
-            --build-arg DOCKER_REGISTRY_USERNAME=${{ secrets.docker_registry_username }} \
-            $image_name && break || echo "Fail.. Retrying"
-          done;
-        shell: bash
-        working-directory: ./compose/base-images
+          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ env.image_name }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: ./compose/base-images/${{ env.image_name }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            "DOCKER_REGISTRY=${{ env.REGISTRY }}"
+            "DOCKER_REGISTRY_REPO=${{ env.REPO_NAME }}"
+            "IMAGE_TAG=${{ github.ref_name }}"
+
   build:
     needs: build_cluster_base
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         image:
@@ -94,40 +108,41 @@ jobs:
             subdir: tests/
       fail-fast: false
     steps:
+      - name: downcase REPO
+        run: |
+          echo "REPO_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
       - name: Checkout
-        uses: actions/checkout@v2
-      - name: Set image tag
-        id: image_tag
-        run: |
-          if [ "${GITHUB_REF#refs/heads/}" = "master" ]; then
-            echo "::set-output name=image_tag::latest";
-          else
-            echo "::set-output name=image_tag::${GITHUB_REF#refs/heads/}"
-          fi
-      - name: Docker Login
-        run: echo "${{ secrets.docker_registry_password }}" | docker login -u ${{ secrets.docker_registry_username }} --password-stdin ${{ secrets.docker_registry }}
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: crazy-max/ghaction-docker-buildx@v1
+        uses: actions/checkout@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
         with:
-          buildx-version: v0.3.1
-      - name: Run Buildx
-        run: |
-          for i in {1..4}; do
-            set +e
-            docker buildx build \
-            --output "type=image,name=${{ secrets.docker_registry }}/${{ secrets.docker_registry_username }}/${{ matrix.image.name }}:${{ steps.image_tag.outputs.image_tag }},push=true" \
-            --build-arg IMAGE_TAG=${{ steps.image_tag.outputs.image_tag }} \
-            --build-arg DOCKER_REGISTRY=${{ secrets.docker_registry }} \
-            --build-arg DOCKER_REGISTRY_USERNAME=${{ secrets.docker_registry_username }} \
-            --build-arg GALAXY_REPO=https://github.com/galaxyproject/galaxy \
-            ${{ matrix.image.subdir }}${{ matrix.image.name }} && break || echo "Fail.. Retrying"
-          done;
-        shell: bash
-        working-directory: ./compose
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.REPO_NAME }}/${{ matrix.image.name }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: ./compose/${{ matrix.image.subdir }}${{ matrix.image.name }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            "DOCKER_REGISTRY=${{ env.REGISTRY }}"
+            "DOCKER_REGISTRY_REPO=${{ env.REPO_NAME }}"
+            "IMAGE_TAG=${{ github.ref_name }}"
   test:
     needs: [build]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         infrastructure:
@@ -226,12 +241,15 @@ jobs:
     steps:
       # Self-made `exclude` as Github Actions currently does not support
       # exclude/including of dicts in matrices
+      - name: downcase REPO
+        run: |
+          echo "REPO_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
       - name: Check if test should be run
         id: run_check
         if: contains(matrix.infrastructure.exclude_test, matrix.test.name) != true
-        run: echo ::set-output name=run::true
+        run: echo "run=true" >> $GITHUB_OUTPUT
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set image tag in env
         run: echo "IMAGE_TAG=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
       - name: Master branch - Set image to to 'latest'
@@ -243,8 +261,9 @@ jobs:
       - name: Run tests for the first time
         if: steps.run_check.outputs.run
         run: |
-          export DOCKER_REGISTRY=${{ secrets.docker_registry }}
-          export DOCKER_REGISTRY_USERNAME=${{ secrets.docker_registry_username }}
+          export DOCKER_REGISTRY=${{ env.REGISTRY }}
+          export DOCKER_REGISTRY_REPO=${{ env.REPO_NAME }}
+          export IMAGE_TAG=${{ github.ref_name }}
           export ${{ matrix.infrastructure.env }}
           export TIMEOUT=${{ matrix.test.timeout }}
           docker-compose ${{ matrix.infrastructure.files }} ${{ matrix.test.files }} config
@@ -274,7 +293,7 @@ jobs:
         if: failure()
         run: sudo chmod -R +r ./compose/export/galaxy/database
       - name: Save artifacts for debugging a failed test
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         if: failure()
         with:
           name: ${{ matrix.infrastructure.name }}_${{ matrix.test.name }}_first-run
@@ -286,10 +305,11 @@ jobs:
           sudo rm -rf export/galaxy/database
         working-directory: ./compose
       - name: Run tests a second time
-        if: matrix.test.second_run == 'true' && steps.run_check.run
+        if: matrix.test.second_run == 'true' && steps.run_check.outputs.run
         run: |
-          export DOCKER_REGISTRY=${{ secrets.docker_registry }}
-          export DOCKER_REGISTRY_USERNAME=${{ secrets.docker_registry_username }}
+          export DOCKER_REGISTRY=${{ env.registry }}
+          export DOCKER_REGISTRY_REPO=${{ env.REPO_NAME }}
+          export IMAGE_TAG=${{ github.ref_name }}
           export ${{ matrix.infrastructure.env }}
           export TIMEOUT=${{ matrix.test.timeout }}
           for i in {1..4}; do
@@ -316,7 +336,7 @@ jobs:
         if: failure() && matrix.test.second_run == 'true'
         run: sudo chmod -R +r ./compose/export/galaxy/database
       - name: Save artifacts for debugging a failed test
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         if: failure() && matrix.test.second_run == 'true'
         with:
           name: ${{ matrix.infrastructure.name }}_${{ matrix.test.name }}_second-run

@@ -1,6 +1,6 @@
-ARG DOCKER_REGISTRY=quay.io
-ARG DOCKER_REGISTRY_USERNAME=bgruening
-ARG IMAGE_TAG=latest
+ARG DOCKER_REGISTRY
+ARG DOCKER_REGISTRY_REPO
+ARG IMAGE_TAG
 
 FROM buildpack-deps:20.04 as build_base
 
@@ -50,7 +50,7 @@ RUN curl -s -L "https://repo.anaconda.com/miniconda/Miniconda3-${MINICONDA_VERSI
 
 FROM build_base as build_galaxy
 
-ARG GALAXY_RELEASE=release_20.09
+ARG GALAXY_RELEASE=release_23.1
 ARG GALAXY_REPO=https://github.com/galaxyproject/galaxy
 
 COPY ./files/common_cleanup.sh /usr/bin/common_cleanup.sh
@@ -68,12 +68,12 @@ RUN apt update && apt install --no-install-recommends libcurl4-openssl-dev libss
     && rm -rf .ci .circleci .coveragerc .gitignore .travis.yml CITATION CODE_OF_CONDUCT.md CONTRIBUTING.md CONTRIBUTORS.md \
               LICENSE.txt Makefile README.rst SECURITY_POLICY.md pytest.ini tox.ini \
               client contrib doc config/plugins lib/galaxy_test test test-data \
-              .venv/lib/node_modules .venv/src/node-v10.15.3-linux-x64 \
+              .venv/lib/node_modules .venv/src/node-v18.12.1-linux-x64 \
               .venv/include/node .venv/bin/node .venv/bin/nodeenv \
     && /usr/bin/common_cleanup.sh
 
 # --- Final image ---
-FROM $DOCKER_REGISTRY/$DOCKER_REGISTRY_USERNAME/galaxy-cluster-base:$IMAGE_TAG as final
+FROM ${DOCKER_REGISTRY:-ghcr.io}/${DOCKER_REGISTRY_REPO:-merciereva/docker-galaxy-stable}/galaxy-cluster-base:${IMAGE_TAG:-test-release-23.0} as final
 
 COPY ./files/common_cleanup.sh /usr/bin/common_cleanup.sh
 COPY ./files/create_galaxy_user.py /usr/local/bin/create_galaxy_user.py
@@ -83,7 +83,7 @@ ENV EXPORT_DIR=/export \
     GALAXY_PYTHON=/usr/bin/python3 \
     HTCONDOR_ROOT=/opt/htcondor
 
-ENV GALAXY_RELEASE=${GALAXY_RELEASE:-release_20.09} \
+ENV GALAXY_RELEASE=${GALAXY_RELEASE:-release_23.1} \
     GALAXY_REPO=${GALAXY_REPO:-https://github.com/galaxyproject/galaxy} \
     GALAXY_STATIC_DIR=$GALAXY_ROOT/static \
     GALAXY_EXPORT=$EXPORT_DIR/galaxy \

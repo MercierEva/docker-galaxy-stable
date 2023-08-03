@@ -31,17 +31,17 @@ if [[ ! -z $PROXY_PREFIX ]]
         ansible localhost -m ini_file -a "dest=${GALAXY_CONFIG_FILE} section=filter:proxy-prefix option=prefix value=${PROXY_PREFIX}" &> /dev/null
         ansible localhost -m ini_file -a "dest=${GALAXY_CONFIG_FILE} section=app:main option=filter-with value=proxy-prefix" &> /dev/null
     else
-        ansible localhost -m lineinfile -a "path=${GALAXY_CONFIG_FILE} regexp='^  module:' state=absent" &> /dev/null
-        ansible localhost -m lineinfile -a "path=${GALAXY_CONFIG_FILE} regexp='^  socket:' state=absent" &> /dev/null
-        ansible localhost -m lineinfile -a "path=${GALAXY_CONFIG_FILE} regexp='^  mount:' state=absent" &> /dev/null
-        ansible localhost -m lineinfile -a "path=${GALAXY_CONFIG_FILE} regexp='^  manage-script-name:' state=absent" &> /dev/null
-        ansible localhost -m lineinfile -a "path=${GALAXY_CONFIG_FILE} insertafter='^uwsgi:' line='  manage-script-name: true'" &> /dev/null
-        ansible localhost -m lineinfile -a "path=${GALAXY_CONFIG_FILE} insertafter='^uwsgi:' line='  mount: ${PROXY_PREFIX}=galaxy.webapps.galaxy.buildapp:uwsgi_app()'" &> /dev/null
-        ansible localhost -m lineinfile -a "path=${GALAXY_CONFIG_FILE} insertafter='^uwsgi:' line='  socket: unix:///srv/galaxy/var/uwsgi.sock'" &> /dev/null
+        # ansible localhost -m lineinfile -a "path=${GALAXY_CONFIG_FILE} regexp='^  module:' state=absent" &> /dev/null
+        # ansible localhost -m lineinfile -a "path=${GALAXY_CONFIG_FILE} regexp='^  socket:' state=absent" &> /dev/null
+        # ansible localhost -m lineinfile -a "path=${GALAXY_CONFIG_FILE} regexp='^  mount:' state=absent" &> /dev/null
+        # ansible localhost -m lineinfile -a "path=${GALAXY_CONFIG_FILE} regexp='^  manage-script-name:' state=absent" &> /dev/null
+        # ansible localhost -m lineinfile -a "path=${GALAXY_CONFIG_FILE} insertafter='^uwsgi:' line='  manage-script-name: true'" &> /dev/null
+        # ansible localhost -m lineinfile -a "path=${GALAXY_CONFIG_FILE} insertafter='^uwsgi:' line='  mount: ${PROXY_PREFIX}=galaxy.webapps.galaxy.buildapp:uwsgi_app()'" &> /dev/null
+        # ansible localhost -m lineinfile -a "path=${GALAXY_CONFIG_FILE} insertafter='^uwsgi:' line='  socket: unix:///srv/galaxy/var/gunicorn.sock'" &> /dev/null
 
-        # Also set SCRIPT_NAME. It's not always necessary due to manage-script-name: true in galaxy.yml, but it makes life easier in this container + it does no harm
-        ansible localhost -m lineinfile -a "path=/etc/nginx/conf.d/uwsgi.conf regexp='^    uwsgi_param SCRIPT_NAME' state=absent" &> /dev/null
-        ansible localhost -m lineinfile -a "path=/etc/nginx/conf.d/uwsgi.conf insertafter='^    include uwsgi_params' line='    uwsgi_param SCRIPT_NAME ${PROXY_PREFIX};'" &> /dev/null
+        # # Also set SCRIPT_NAME. It's not always necessary due to manage-script-name: true in galaxy.yml, but it makes life easier in this container + it does no harm
+        # ansible localhost -m lineinfile -a "path=/etc/nginx/conf.d/uwsgi.conf regexp='^    uwsgi_param SCRIPT_NAME' state=absent" &> /dev/null
+        # ansible localhost -m lineinfile -a "path=/etc/nginx/conf.d/uwsgi.conf insertafter='^    include uwsgi_params' line='    uwsgi_param SCRIPT_NAME ${PROXY_PREFIX};'" &> /dev/null
     fi
 
     ansible localhost -m ini_file -a "dest=${GALAXY_CONFIG_DIR}/reports_wsgi.ini section=filter:proxy-prefix option=prefix value=${PROXY_PREFIX}/reports" &> /dev/null

@@ -52,14 +52,14 @@ done
 # shellcheck disable=SC2143,SC2086,SC2010
 if [ ! -d  "$EXPORT_DIR/$GALAXY_CONFIG_DIR" ] || [ -z "$(ls -p $EXPORT_DIR/$GALAXY_CONFIG_DIR | grep -v /)" ]; then
   # Move config to $EXPORT_DIR and create symlink
-  mkdir "$EXPORT_DIR/$GALAXY_CONFIG_DIR"
+  mkdir -p "$EXPORT_DIR/$GALAXY_CONFIG_DIR"
   chown "$GALAXY_USER:$GALAXY_USER" "$EXPORT_DIR/$GALAXY_CONFIG_DIR"
-  cp -rpf $GALAXY_CONFIG_DIR/* $EXPORT_DIR/$GALAXY_CONFIG_DIR
-  cp -rpf $GALAXY_CONFIG_DIR/plugins/* $EXPORT_DIR/$GALAXY_CONFIG_DIR/plugins
+  cp -rpf "$GALAXY_ROOT/lib/galaxy/config/*" $EXPORT_DIR/$GALAXY_CONFIG_DIR
+  cp -rpf "$GALAXY_ROOT/lib/galaxy/config/plugins/*" "$EXPORT_DIR/$GALAXY_CONFIG_DIR/plugins"
 fi
-rm -rf "$GALAXY_CONFIG_DIR"
-ln -v -s "$EXPORT_DIR/$GALAXY_CONFIG_DIR" "$GALAXY_CONFIG_DIR"
-chown -h "$GALAXY_USER:$GALAXY_USER" "$GALAXY_CONFIG_DIR"
+#rm -rf "$GALAXY_ROOT/lib/galaxy/config"
+#ln -v -s "$EXPORT_DIR/$GALAXY_CONFIG_DIR" "$GALAXY_ROOT/lib/galaxy/config"
+#chown -h "$GALAXY_USER:$GALAXY_USER" "$GALAXY_ROOT/lib/galaxy/config"
 
 # Export database-folder (used for job files etc)
 rm -rf "$GALAXY_DATABASE_PATH"
@@ -130,4 +130,4 @@ chown -RL "$GALAXY_USER:$GALAXY_GROUP" "$GALAXY_CONFIG_DIR"
 
 echo "Starting Galaxy now.."
 cd "$GALAXY_ROOT" || { echo "Error: Could not change to $GALAXY_ROOT"; exit 1; }
-"$GALAXY_VIRTUAL_ENV/bin/uwsgi" --yaml "$GALAXY_CONFIG_DIR/galaxy.yml" --uid "$GALAXY_UID" --gid "$GALAXY_GID"
+"$GALAXY_VIRTUAL_ENV/bin/galaxyctl" start

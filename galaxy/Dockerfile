@@ -16,7 +16,7 @@ MAINTAINER Björn A. Grüning, bjoern.gruening@gmail.com
 ARG GALAXY_RELEASE
 ARG GALAXY_REPO
 
-ENV GALAXY_RELEASE=${GALAXY_RELEASE:-release_20.09} \
+ENV GALAXY_RELEASE=${GALAXY_RELEASE:-release_23.1} \
     GALAXY_REPO=${GALAXY_REPO:-https://github.com/galaxyproject/galaxy} \
     GALAXY_ROOT=/galaxy-central \
     GALAXY_CONFIG_DIR=/etc/galaxy \
@@ -46,8 +46,8 @@ ENV GALAXY_CONFIG_FILE=$GALAXY_CONFIG_DIR/galaxy.yml \
     GALAXY_DESTINATIONS_DEFAULT=slurm_cluster \
     GALAXY_RUNNERS_ENABLE_SLURM=True \
     GALAXY_RUNNERS_ENABLE_CONDOR=False \
-    GALAXY_CONFIG_DATABASE_CONNECTION=postgresql://galaxy:galaxy@localhost:5432/galaxy?client_encoding=utf8 \
-    GALAXY_CONFIG_ADMIN_USERS=admin@galaxy.org \
+    #GALAXY_CONFIG_DATABASE_CONNECTION=postgresql://galaxy:galaxy@localhost:5432/galaxy?client_encoding=utf8 \
+    #GALAXY_CONFIG_ADMIN_USERS=admin@galaxy.org \
     GALAXY_CONFIG_MASTER_API_KEY=HSNiugRFvgT574F43jZ7N9F3 \
     GALAXY_CONFIG_BRAND="Galaxy Docker Build" \
     GALAXY_CONFIG_STATIC_ENABLED=False \
@@ -139,11 +139,12 @@ RUN curl -s -L https://repo.anaconda.com/miniconda/Miniconda3-4.7.10-Linux-x86_6
 
 
 RUN cp $GALAXY_HOME/.bashrc ~/
-RUN mkdir $GALAXY_ROOT \
-    && curl -L -s $GALAXY_REPO/archive/$GALAXY_RELEASE.tar.gz | tar xzf - --strip-components=1 -C $GALAXY_ROOT \
+RUN curl -L -s $GALAXY_REPO/tarball/$GALAXY_RELEASE | tar xzf - -C / \
+    && ln -s /galaxyproject-galaxy-* $GALAXY_ROOT \
     && PATH=$GALAXY_CONDA_PREFIX/bin/:$PATH virtualenv $GALAXY_VIRTUAL_ENV \
     && chown -R $GALAXY_USER:$GALAXY_USER $GALAXY_VIRTUAL_ENV \
     && chown -R $GALAXY_USER:$GALAXY_USER $GALAXY_ROOT \
+    && chown -R $GALAXY_USER:$GALAXY_USER /galaxyproject-galaxy-* \
     # Setup Galaxy configuration files.
     && mkdir -p $GALAXY_CONFIG_DIR $GALAXY_CONFIG_DIR/web \
     && chown -R $GALAXY_USER:$GALAXY_USER $GALAXY_CONFIG_DIR \
@@ -156,7 +157,7 @@ RUN mkdir $GALAXY_ROOT \
     && rm -rf /tmp/* /root/.cache/ /var/cache/* $GALAXY_ROOT/client/node_modules/ $GALAXY_VIRTUAL_ENV/src/ /home/galaxy/.cache/ /home/galaxy/.npm
 
 
-ADD ./reports_wsgi.ini.sample $GALAXY_CONFIG_DIR/reports_wsgi.ini
+# ADD ./reports_wsgi.ini.sample $GALAXY_CONFIG_DIR/reports_wsgi.ini
 ADD sample_tool_list.yaml $GALAXY_HOME/ephemeris/sample_tool_list.yaml
 ADD roles/ /ansible/roles
 ADD provision.yml /ansible/provision.yml
@@ -186,7 +187,7 @@ RUN mkdir -p /shed_tools $EXPORT_DIR/ftp/ \
     && ln -s /tool_deps/ $EXPORT_DIR/tool_deps \
     # Configure Galaxy to use the Tool Shed
     && chown $GALAXY_USER:$GALAXY_USER $EXPORT_DIR/tool_deps \
-    && apt update -qq && apt install --no-install-recommends -y ansible \
+    && apt update -qq && apt install --no-install-recommends -y ansible g++ make \
     && ansible-playbook /ansible/provision.yml \
     --extra-vars galaxy_venv_dir=$GALAXY_VIRTUAL_ENV \
     --extra-vars galaxy_log_dir=$GALAXY_LOGS_DIR \
@@ -222,7 +223,7 @@ RUN mkdir -p /shed_tools $EXPORT_DIR/ftp/ \
     && python /usr/local/bin/setup_postgresql.py --dbuser galaxy --dbpassword galaxy --db-name galaxy --dbpath $PG_DATA_DIR_DEFAULT --dbversion $PG_VERSION \
     && service postgresql start \
     && service postgresql stop \
-    && apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && rm -rf ~/.cache/ \
+    && apt-get autoremove -y make g++ && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && rm -rf ~/.cache/ \
     # cleanup dance
     && find $GALAXY_ROOT/ -name '*.pyc' -delete | true \
     && find /usr/lib/ -name '*.pyc' -delete | true \
@@ -318,11 +319,11 @@ RUN chmod +x $GALAXY_ROOT/run.sh && sed -i 's/py-call-osafterfork.*//g' /etc/gal
 ENV GALAXY_CONFIG_INTEGRATED_TOOL_PANEL_CONFIG $EXPORT_DIR/galaxy-central/integrated_tool_panel.xml
 
 # Expose port 80, 443 (webserver), 21 (FTP server), 8800 (Proxy), 9002 (supvisord web app)
-EXPOSE :21
-EXPOSE :80
-EXPOSE :443
-EXPOSE :8800
-EXPOSE :9002
+EXPOSE 21
+EXPOSE 80
+EXPOSE 443
+EXPOSE 8800
+EXPOSE 9002
 
 # Mark folders as imported from the host.
 VOLUME ["/export/", "/data/", "/var/lib/docker"]

@@ -1,23 +1,62 @@
-galaxy_uwsgi:
-  socket: :5555
-  buffer-size: 16384
-  processes: 1
-  threads: 4
-  offload-threads: 2
-  static-map: /static=static
-  static-map: /favicon.ico=static/favicon.ico
-  master: false
-  virtualenv: .venv
-  pythonpath: lib
-  thunder-lock: true
-  die-on-term: true
-  hook-master-start: unix_signal:2 gracefully_kill_them_all
-  hook-master-start: unix_signal:15 gracefully_kill_them_all
-  enable-threads: true
+galaxy_job_config:
+  runners:
+    local_runner:
+      load: galaxy.jobs.runners.local:LocalJobRunner
+      workers: 4
+  handling:
+    assign: ['db-skip-locked']
+  execution:
+    default: local_env
+    environments:
+      local_env:
+        runner: local_runner
+        tmp_dir: true
+  tools:
+    - class: local # these special tools that aren't parameterized for remote execution - expression tools, upload, etc
+      environment: local_env
 
-galaxy:
-  tool_dependency_dir: /tool_deps
-  tool_data_table_config_path: /cvmfs/data.galaxyproject.org/byhand/location/tool_data_table_conf.xml,/cvmfs/data.galaxyproject.org/managed/location/tool_data_table_conf.xml
+galaxy_config:
+  galaxy:
+    tool_dependency_dir: /tool_deps
+    tool_data_table_config_path: /cvmfs/data.galaxyproject.org/byhand/location/tool_data_table_conf.xml,/cvmfs/data.galaxyproject.org/managed/location/tool_data_table_conf.xml
+    builds_file_path: /export/galaxy/tool-data/shared/ucsc/builds.txt
+    datatypes_config_file: /lib/galaxy/config/galaxy/datatypes_conf.xml
+    # Main Configuration
+    admin_users:
+    - admin@galaxy.org
+    database_connection: postgresql://galaxy:galaxy@localhost:5432/galaxy
+    file_path: /export/galaxy-central/database/files
+    job_working_directory: /cluster_storage/galaxy/galaxy_export/galaxy-central/database/job_working_directory
+    object_store_store_by: uuid
+    id_secret: d5c910cc6e32cad08599987ab64dcfae
+    job_config: ${galaxy_job_config}
+
+  gravity:
+    process_manager: systemd
+    galaxy_root: /galaxy
+    galaxy_user: galaxy
+    virtualenv: /galaxy_venv
+    gunicorn:
+      # listening options
+      bind: galaxy-server:5555
+      # performance options
+      workers: 2
+      # Other options that will be passed to gunicorn
+      # This permits setting of 'secure' headers like REMOTE_USER (and friends)
+      # https://docs.gunicorn.org/en/stable/settings.html#forwarded-allow-ips
+      extra_args: '--forwarded-allow-ips="*"'
+      # This lets Gunicorn start Galaxy completely before forking which is faster.
+      # https://docs.gunicorn.org/en/stable/settings.html#preload-app
+      preload: true
+    celery:
+      concurrency: 2
+      loglevel: DEBUG
+    handlers:
+      handler:
+        processes: 2
+        pools:
+          - job-handlers
+          - workflow-schedulers
 
 pulsar:
   conda_auto_init: True
@@ -95,7 +134,6 @@ htcondor_master:
   ALLOW_CLIENT: "*"
   DOCKER_IMAGE_CACHE_SIZE: "20"
   UID_DOMAIN: "galaxy"
-  TRUST_UID_DOMAIN: "TRUE"
 
 htcondor_executor:
   CONDOR_HOST: "htcondor-master"

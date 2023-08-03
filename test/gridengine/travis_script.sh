@@ -9,7 +9,7 @@ docker run --hostname sgemaster --name sgemaster -d -v ${EXPORT}:/export -v $PWD
 sleep 10
 
 # start galaxy
-GALAXY_CONTAINER=quay.io/bgruening/galaxy
+GALAXY_CONTAINER=ghcr.io/merciereva/galaxy
 GALAXY_CONTAINER_NAME=galaxytest
 GALAXY_CONTAINER_HOSTNAME=galaxytest
 

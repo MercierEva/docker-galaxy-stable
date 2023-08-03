@@ -105,7 +105,7 @@ jobs:
       - name: Check if test should be run
         id: run_check
         if: contains(matrix.infrastructure.exclude_test, matrix.test.name) != true
-        run: echo ::set-output name=run::true
+        run: echo "run=true" >> $GITHUB_OUTPUT
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set WORKFLOWS env for worfklows-test
@@ -116,7 +116,7 @@ jobs:
           image_name: galaxy-container-base
         run: |
           docker buildx build  \
-            --output "type=image,name=quay.io/bgruening/$image_name:ci-testing" \
+            --output "type=image,name=ghcr.io/merciereva/$image_name:ci-testing" \
             --build-arg IMAGE_TAG=ci-testing \
             $image_name
         working-directory: ./compose/base-images
@@ -125,7 +125,7 @@ jobs:
           image_name: galaxy-cluster-base
         run: |
           docker buildx build  \
-            --output "type=image,name=quay.io/bgruening/$image_name:ci-testing" \
+            --output "type=image,name=ghcr.io/merciereva/$image_name:ci-testing" \
             --build-arg IMAGE_TAG=ci-testing \
             $image_name
         working-directory: ./compose/base-images
@@ -176,7 +176,7 @@ jobs:
           sudo rm -rf export/galaxy/database
         working-directory: ./compose
       - name: Run tests a second time
-        if: matrix.test.second_run == 'true' && steps.run_check.run
+        if: matrix.test.second_run == 'true' && steps.run_check.outputs.run
         run: |
           export IMAGE_TAG=ci-testing
           export COMPOSE_DOCKER_CLI_BUILD=1

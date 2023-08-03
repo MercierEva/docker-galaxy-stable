@@ -13,11 +13,14 @@ http {
   gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
   gzip_buffers 16 8k;
 
-  # allow up to 3 minutes for Galaxy to respond to slow requests before timing out
-  uwsgi_read_timeout {{ NGINX_UWSGI_READ_TIMEOUT | default(180, true) }};
 
   # maximum file upload size
   client_max_body_size 10g;
+
+  upstream galaxy {
+	  server galaxy-server:5555;
+
+  }
 
   server {
     listen 80 default_server;
@@ -30,9 +33,14 @@ http {
 
     # proxy all requests not matching other locations to uWSGI
     location /{{ GALAXY_PROXY_PREFIX | regex_replace("^/", "") | regex_replace("/$", "") }} {
-      uwsgi_pass galaxy-server:5555;
-      include uwsgi_params;
-      uwsgi_param UWSGI_SCHEME /{{ GALAXY_PROXY_PREFIX | regex_replace("^/", "") | regex_replace("/$", "") }};
+      proxy_set_header Host $http_host;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_pass http://galaxy/;
+      # uwsgi_pass galaxy-server:5555;
+      # include uwsgi_params;
+      # uwsgi_param UWSGI_SCHEME /{{ GALAXY_PROXY_PREFIX | regex_replace("^/", "") | regex_replace("/$", "") }};
     }
 
     # serve framework static content

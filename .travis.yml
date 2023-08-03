@@ -1,14 +1,14 @@
 sudo: required
 
 language: python
-python: 3.6
+python: 3.8
 
 services:
   - docker
 
 env:
   matrix:
-    - TOX_ENV=py36
+    - TOX_ENV=py
   global:
     - secure: "SEjcKJQ0NGXdpFxFhLVlyJmiBvgiLtR5Uufg90Vm3owKlMy0NSfIrOR+2dwNniqOp7QI3eVepnqjid/Ka0QStzVqMCe55OLkJ/TbTHnMLpbtY63mpGfogVRvxMMAVpzLpcQqtJFORZmO/MIWSLlBiXMMzOg3+tbXvQXmL17Rbmw="
 
@@ -41,10 +41,10 @@ before_install:
   - git submodule update --init --recursive
   - sudo chown 1450 /tmp && sudo chmod a=rwx /tmp
   - export WORKING_DIR="$TRAVIS_BUILD_DIR"
-  - export DOCKER_RUN_CONTAINER="quay.io/bgruening/galaxy"
+  - export DOCKER_RUN_CONTAINER="ghcr.io/merciereva/galaxy"
   - export INSTALL_REPO_ARG=""
   - export SAMPLE_TOOLS=$GALAXY_HOME/ephemeris/sample_tool_list.yaml
-  - travis_wait 30 cd "$WORKING_DIR" && docker build -t quay.io/bgruening/galaxy galaxy/
+  - travis_wait 30 cd "$WORKING_DIR" && docker build -t ghcr.io/merciereva/galaxy galaxy/
   - |
     ## define a container size check function, first parameter is the container name, second the max allowed size in MB
     container_size_check () {
@@ -60,7 +60,7 @@ before_install:
             #exit
         fi
     }
-    container_size_check   quay.io/bgruening/galaxy  1500
+    container_size_check   ghcr.io/merciereva/galaxy  1500
 
     mkdir local_folder
     docker run -d -p 8080:80 -p 8021:21 -p 8022:22 \
@@ -72,7 +72,7 @@ before_install:
         -e GALAXY_CONFIG_ENABLE_USER_DELETION=True \
         -e GALAXY_CONFIG_ENABLE_BETA_WORKFLOW_MODULES=True \
         -v /tmp/:/tmp/ \
-        quay.io/bgruening/galaxy
+        ghcr.io/merciereva/galaxy
 
     sleep 30
     docker logs galaxy
@@ -83,7 +83,7 @@ before_install:
     }
     docker_exec_run() {
       cd $WORKING_DIR
-      docker run quay.io/bgruening/galaxy "$@"
+      docker run ghcr.io/merciereva/galaxy "$@"
     }
     docker_run() {
       cd $WORKING_DIR

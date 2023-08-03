@@ -17,7 +17,7 @@ docker run -d -v "$EXPORT":/export --name slurm \
 # and link it to the slurm container (so that galaxy resolves the slurm container's hostname)
 docker run -d -e "NONUSE=slurmd,slurmctld" \
    --link slurm --name galaxy-slurm-test -h galaxy \
-   -p 80:80 -v "$EXPORT":/export quay.io/bgruening/galaxy
+   -p 80:80 -v "$EXPORT":/export ghcr.io/merciereva/galaxy
 # We wait for the creation of the /galaxy-central/config/ if it does not exist yet
 sleep 180s
 # We restart galaxy
@@ -30,7 +30,7 @@ sudo chown 1450:1450 "$EXPORT"/galaxy-central/config/job_conf.xml
 
 docker run -d -e "NONUSE=slurmd,slurmctld" \
    --link slurm --name galaxy-slurm-test -h galaxy \
-   -p 80:80 -v "$EXPORT":/export quay.io/bgruening/galaxy
+   -p 80:80 -v "$EXPORT":/export ghcr.io/merciereva/galaxy
 # Let's submit a job from the galaxy container and check it runs in the slurm container
 sleep 60s
 docker exec galaxy-slurm-test su - galaxy -c 'srun hostname' | grep slurm

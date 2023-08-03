@@ -19,7 +19,7 @@ services:
     volumes:
       - ${EXPORT_DIR:-./export}/pulsar/config:/pulsar/config
   pulsar:
-    image: ${DOCKER_REGISTRY:-quay.io}/${DOCKER_REGISTRY_USERNAME:-bgruening}/pulsar:${IMAGE_TAG:-latest}
+    image: $DOCKER_REGISTRY/$DOCKER_REGISTRY_REPO/pulsar:$IMAGE_TAG
     build: pulsar
     hostname: pulsar
     privileged: true

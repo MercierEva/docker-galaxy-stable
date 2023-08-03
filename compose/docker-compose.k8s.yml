@@ -17,7 +17,7 @@ services:
     networks:
       - kind
   galaxy-kind:
-    image: ${DOCKER_REGISTRY:-quay.io}/${DOCKER_REGISTRY_USERNAME:-bgruening}/galaxy-kind:${IMAGE_TAG:-latest}
+    image: $DOCKER_REGISTRY/$DOCKER_REGISTRY_REPO/galaxy-kind:$IMAGE_TAG
     build: galaxy-kind
     privileged: true
     volumes:

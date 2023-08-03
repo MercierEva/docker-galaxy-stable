@@ -1,19 +1,15 @@
-FROM alpine:3.11 as build
+FROM alpine:3.14 as build
 
-ENV BIOBLEND_VERSION=0.13.0
+RUN apk add --no-cache bash python3 cmd:pip3 make curl\
+    && apk add --no-cache --virtual build-dep gcc libxml2-dev libxslt-dev musl-dev linux-headers python3-dev \
+    && pip3 install bioblend \
+    && mkdir -p /src/bioblend/ 
 
-ADD "https://github.com/galaxyproject/bioblend/archive/v$BIOBLEND_VERSION.zip" /src/bioblend.zip
-RUN apk update && apk add curl python3-dev unzip \
-    && pip3 install pep8 tox \
-    && cd /src \
-    && unzip bioblend.zip && rm bioblend.zip \
-    && mv "bioblend-$BIOBLEND_VERSION" bioblend \
-    && cd bioblend \
-    && python3 setup.py install
+RUN pip3 install pep8 tox --ignore-installed
 
 WORKDIR /src/bioblend
 
-RUN tox -e py38 --notest
+RUN tox --notest
 
 COPY ./run.sh /src/bioblend/run.sh
 
